@@ -1,28 +1,29 @@
 {
-  "name": "using-blogmatic",
-  "version": "1.0.0",
-  "private": true,
-  "description": "using-blogmatic",
-  "author": "Jakub Czartek",
-  "keywords": [
-    "gatsby"
-  ],
-  "scripts": {
-    "develop": "gatsby develop",
-    "start": "gatsby develop",
-    "build": "gatsby build",
-    "serve": "gatsby serve",
-    "clean": "gatsby clean"
-  },
-  "dependencies": {
-    "gatsby": "^4.15.2",
-    "react": "^18.1.0",
-    "react-dom": "^18.1.0"
-  },
-  "devDependencies": {
-    "autoprefixer": "^10.4.7",
-    "gatsby-plugin-postcss": "^5.16.0",
-    "postcss": "^8.4.14",
-    "tailwindcss": "^3.0.24"
-  }
+    "name": "using-blogmatic",
+    "version": "1.0.0",
+    "private": true,
+    "description": "using-blogmatic",
+    "author": "Jakub Czartek",
+    "keywords": [
+        "gatsby"
+    ],
+    "scripts": {
+        "develop": "gatsby develop",
+        "start": "gatsby develop",
+        "build": "gatsby build",
+        "serve": "gatsby serve",
+        "clean": "gatsby clean"
+    },
+    "dependencies": {
+        "@heroicons/react": "^1.0.6",
+        "gatsby": "^4.15.2",
+        "react": "^18.1.0",
+        "react-dom": "^18.1.0"
+    },
+    "devDependencies": {
+        "autoprefixer": "^10.4.7",
+        "gatsby-plugin-postcss": "^5.16.0",
+        "postcss": "^8.4.14",
+        "tailwindcss": "^3.0.24"
+    }
 }

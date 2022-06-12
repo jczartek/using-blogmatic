@@ -4,6 +4,9 @@ module.exports = {
     ],
     theme: {
         extend: {},
+        backgroundImage: {
+            'nav-image': "url('../images/nav-bg.jpg')",
+        }
     },
     plugins: [],
 }

@@ -1,23 +1,16 @@
-import * as React from 'react';
-import {Link} from 'gatsby';
+import * as React from "react";
+import  Nav  from './nav'
 
-
-const Layout = ({pageTitle, children}) => {
-    return(
-    <div>
-        <title>{pageTitle}</title>
-        <nav>
-            <h4>using blogmatic</h4>
-            <ul>
-                <li><Link to="/">Posty</Link></li>
-                <li><Link to="/about">O mnie</Link></li>
-            </ul>
-        </nav>
-        <main>
-            {children}
-        </main>
+const Layout = ({ pageTitle, children }) => {
+  return (
+    <div className="min-h-screen w-full bg-gray-200">
+      <title>{pageTitle}</title>
+      <Nav />
+      <div className="container"> 
+          <main>{children}</main>
+      </div>
     </div>
-    );
-}
+  );
+};
 
 export default Layout;
