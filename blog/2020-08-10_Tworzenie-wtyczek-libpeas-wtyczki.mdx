@@ -1,0 +1,289 @@
+---
+author: Jakub Czartek
+title: Tworzenie wtyczek libpeas. Wtyczki.
+date: 2020-08-10
+---
+
+W poprzednim artykule przygotowana została biblioteka i program, który wczytuje dostarczone przez nas pluginy. W tym artykule zamierzam pokazać jak pisać wtyczki, które będą umieszczać dodatkowy przycisk w interfejsie naszej aplikacji oraz obsługiwać zdarzenie kliknięcia dodanego przycisku. Wtyczki zostaną przygotowane w trzech językach programowania: vali, c i pythonie.
+
+Pierwszą rzeczą, jaką zrobimy, to przygotujemy plik, który będzie zawierał informacje na temat naszego pluginu. Plik ma rozszerzenie .plugin. Ten plik zawiera wszystkie potrzebne informacje, które będą potrzebne silnikowi wtyczek do poprawnego załadowania pluginów. Każdy przygotowany plugin musi mieć taki plik. Plik ma strukturę taką samą jak pliki konfiguracyjne ini i składają się z następujących elementów: sekcji i parametrów. Deklaracja sekcji zaczyna się znakiem '[', a kończy ']'. Obowiązkową sekcją jest \[Plugin\]. Parametr tworzy klucz ('var1'), znak równości ('=') i wartość ('abc'). Biblioteka libpeas dostarcza kilka predefiniowanych kluczy np. Name czy Module. Dodatkowo można tworzyć własne parametry, w których klucze muszą zaczynać się od prefiksu 'X-' np. X-YearOfPublish=2020. Jak wspomniałem wcześniej, biblioteka libpeas dostarcza kilka predefiniowanych kluczy dla parametrów, które opiszę pokrótce:
+
+* **Module** - parametr z kluczem Module przechowuje nazwę pliku wtyczki, który zostanie załadowany. Może to być plik biblioteki lub zwykły plik z kodem w przypadku wtyczki napisanej w języku python.
+* **Name** - parametr z kluczem Name przechowuje nazwę wtyczki.
+* **Loader** - w tym parametrze podajemy nazwę loadera dla języka, w którym został napisany plugin. Biblioteka libpeas dostarcza loaderów dla języków c, vala, python i lua. Gdy nie podamy tego parametru, to domyślnym jest loader dla języków c i vala.
+* **Description** - w tym parametrze podajemy opis pluginu.
+* **Authors** - tutaj umieszczamy autora wtyczki lub listę autorów oddzielonych średnikami.
+* **Copyright** - parametr dotyczy praw autorskich.
+* **Website** - podajemy stronę www pluginu.
+* **Hidden** - ten parametr określa czy plugin jest ukryty. Przyjmuje wartości true lub false. Gdy plugin jest ukryty, oznacza to, że nie może być widoczny dla menadżera pluginu np. PeasGtkPluginManager. Włączaniem i wyłączaniem takiego pluginu zajmuje się tylko aplikacja. 
+* **Depends** - ten parametr określa zależności. Podajemy tutaj nazwę innych pluginów, które muszą być włączone przed naszym pluginem i wyłączone nim. Listę zależności rozdzielamy średnikami.
+* **Builtin** - parametr ten określa czy plugin jest wbudowany w aplikację i powiniem być zarządzany przez nią samą. Użytkownik nie może włączać i wyłączać pluginu przez menadżera wtyczek.
+
+Poniżej umieszczam przykładowy plik konfiguracyjny:
+```ini
+[Plugin]
+Module=helloworld
+Depends=foo;bar;baz
+Loader=python3
+Name=Hello World
+Description=Displays "Hello World"
+Authors=Steve Frécinaux <code@istique.net>
+Copyright=Copyright © 2009-10 Steve Frécinaux
+Website=https://wiki.gnome.org/Projects/Libpeas
+Help=http://library.gnome.org/devel/libpeas/stable/
+Hidden=false
+```
+W bibliotece libpeas umieszczona została struktura **PeasPluginInfo** za pomocą której możemy pobierać wszystkie potrzebne informacje z pliku konfiguracyjnego.
+W poniższym przykładzie pobieramy i wyświetlamy nazwę i nazwę modułu pluginu.
+
+```c#
+var engine = Peas.Engine.get_default();
+
+foreach(var plugin_info in engine.get_plugin_list()) {
+  stdout.printf(@"$(plugin_info.get_name()): $(plugin_info.get_module_name())";)
+}
+```
+
+### Wtyczka napisana w języku Vala
+Pierwszą wtyczkę napiszemy w języku Vala. Poniżej znajduję się plik konfiguracyjny i kod wtyczki.
+
+```ini
+[Plugin]
+Module=vala-extension.so
+Name=ValaExtension
+```
+
+```c#
+// Plik źródłowy: ./plugins/vala-extension.vala
+class ValaExtension : Object, Extensya.Extension {
+
+    public Extensya.Window window { get; set; }
+    private Gtk.Button button;
+
+    void activate() {
+        button = new Gtk.Button.with_label("Vala Extension Btn");
+
+        button.clicked.connect(() => {
+            print("Vala Extension: Hello World!\n");
+        });
+
+        window.add_button(button);
+        button.show();
+    }
+
+    void deactivate() {
+        window.remove_button(button);
+    }
+}
+
+/* Register extension types */
+[ModuleInit]
+public void peas_register_types(TypeModule module) {
+    var objmodule = module as Peas.ObjectModule;
+
+    objmodule.register_extension_type(typeof (Extensya.Extension), typeof (ValaExtension));
+}
+```
+
+Kod naszej wtyczki jest dość prosty. Dlatego nie będę go szczegółowo omawiał. Skupię się tylko na dwóch rzeczach: zainicjowaniu właściwości window oraz rejestracji naszej klasy.
+
+Jak łatwo zauważyć, w powyższej klasie jest zadeklarowana właściwość window, która jest referencją do głównego okna naszej aplikacji, ale nigdzie w klasie nie została ona zainicjowana. Po skompilowaniu i uruchomieniu nie dostaniemy komunikatu o błędzie. Wszystko jest w porządku. Nasuwa się pytanie: w którym momencie nasza właściwości jest inicjowana? Za poprawne zainicjowanie naszej właściowści odpowiada klasa **ExtensionSet** i robi to zaraz po utworzeniu obiektu naszej wtyczki. Przypominam, że referencja do głównego okna naszej aplikacji była ustawiona w klasie **Window** przy tworzeniu obiektu **ExtensionSet**.
+
+Na samym końcu pliku umieszczona została metoda *peas_register_types()*. Ta metoda ma za zadanie zarejestrować typ klasy rozszerzającej. Jak wcześniej wspomniałem, każda wtyczka jest w rzeczywistości biblioteką, w chwili ładowania biblioteki do naszej aplikacji, system zarządzania wtyczkami szuka metody *peas_register_types()* i ją wywołuje, aby zarejestrować wszystkie typy klas rozszerzających. Każda wtyczka napisana w języku c lub vala musi mieć funkcję *peas_register_types()* i w niej musi zarejestrować wszystkie klasy rozszerzające. W przypadku wtyczek napisanych w języku python nie musimy dostarczać takiej funkcji.
+
+Kod naszej wtyczki kompilujemy wpisując w konsoli:
+
+```bash
+valac -o ./plugins/libvala-extension.so --library vala-extension ./plugins/vala-extension.vala -X -shared -X -fPIC --vapidir . --pkg libpeas-1.0 --pkg gtk+-3.0 --pkg extensya -X -I. -X -L. -X -lextensya
+```
+
+### Wtyczka napisana w języku C
+
+Kolejna wtyczka napisana jest w jezyku c. Wtyczka skompilowana jest do pliku biblioteki o nazwie libc-extension, którą podajemy w parametrze **Module**.
+
+```ini
+[Plugin]
+Module=libc-extension.so
+Name=CExtension
+```
+
+```c
+// Plik źródłowy: ./plugins/c-extension.h
+#pragma once
+
+#include <gtk/gtk.h>
+#include <extensya.h>
+
+G_BEGIN_DECLS
+
+#define C_TYPE_EXTENSION (c_extension_get_type())
+
+G_DECLARE_FINAL_TYPE (CExtension, c_extension, C, EXTENSION, GObject)
+
+G_END_DECLS
+```
+
+```c
+// Plik źródłowy: ./plugins/c-extension.c
+#include "c-extension.h"
+
+struct _CExtension
+{
+  GObject parent_instance;
+  ExtensyaWindow *window;
+  GtkButton *btn;
+};
+
+static void extensya_iface_init (ExtensyaExtensionIface *iface);
+
+G_DEFINE_TYPE_WITH_CODE (CExtension, c_extension, G_TYPE_OBJECT,
+                         G_IMPLEMENT_INTERFACE (EXTENSYA_TYPE_EXTENSION, extensya_iface_init))
+
+enum {
+  PROP_0,
+  PROP_WINDOW,
+  N_PROPS
+};
+
+static void
+c_extension_get_property (GObject    *object,
+                          guint       prop_id,
+                          GValue     *value,
+                          GParamSpec *pspec)
+{
+  CExtension *self = C_EXTENSION (object);
+
+  switch (prop_id)
+    {
+    case PROP_WINDOW:
+      g_value_set_object (value, self->window);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+    }
+}
+
+static void
+c_extension_set_property (GObject      *object,
+                          guint         prop_id,
+                          const GValue *value,
+                          GParamSpec   *pspec)
+{
+  CExtension *self = C_EXTENSION (object);
+
+  switch (prop_id)
+    {
+    case PROP_WINDOW:
+      self->window = (ExtensyaWindow *) g_value_get_object (value);
+      break;
+    default:
+      G_OBJECT_WARN_INVALID_PROPERTY_ID (object, prop_id, pspec);
+    }
+}
+
+static void
+c_extension_class_init (CExtensionClass *klass)
+{
+  GObjectClass *object_class = G_OBJECT_CLASS (klass);
+
+  object_class->get_property = c_extension_get_property;
+  object_class->set_property = c_extension_set_property;
+  g_object_class_override_property (object_class, PROP_WINDOW, "window");
+}
+
+static void
+c_extension_init (CExtension *self)
+{
+}
+
+void
+clicked_cb (GtkButton *button,
+            gpointer   user_data)
+{
+  g_print("C Extension: Hello World!\n");
+}
+
+static void activate (ExtensyaExtension* base)
+{
+  CExtension *self = (CExtension *)base;
+
+  self->btn = (GtkButton *) gtk_button_new_with_label("C Extension Btn");
+  g_signal_connect (self->btn, "clicked",
+                    G_CALLBACK (clicked_cb), NULL);
+  extensya_window_add_button (self->window, self->btn);
+}
+
+static void deactivate (ExtensyaExtension* base)
+{
+  CExtension *self = (CExtension *)base;
+  extensya_window_remove_button (self->window, self->btn);
+}
+
+static void
+extensya_iface_init (ExtensyaExtensionIface *iface)
+{
+  iface->activate = activate;
+  iface->deactivate = deactivate;
+}
+
+#include <libpeas/peas.h>
+
+G_MODULE_EXPORT void
+peas_register_types (PeasObjectModule *module)
+{
+  peas_object_module_register_extension_type (module, EXTENSYA_TYPE_EXTENSION, C_TYPE_EXTENSION);
+}
+
+```
+
+```bash
+gcc -c -Wall -fpic -o ./plugins/libc-extension.o ./plugins/c-extension.c `pkg-config --cflags gtk+-3.0` `pkg-config --cflags libpeas-1.0` -I. -L. -lextensya && gcc -shared -o ./plugins/libc-extension.so ./plugins/libc-extension.o
+
+```
+
+### Wtyczka napisana w języku Python
+
+Ostatnia wtyczka napisana jest w języku python. W pliku konfiguracyjnym podajemy parametr **Loader** z wartością python3. Jest to obowiązkowy parametr dla wtyczek pisanych w innych językach niż C lub Vala. Kod umieszczamy w pliku python-extension.py i podajemy nazwę tego pliku w parametrze **Module**. Nazwę pliku podajemy bez rozszerzenia ".py".
+
+```ini
+[Plugin]
+Module=python-extension
+Loader=python3
+Name=PythonExtension
+```
+
+```python
+# Plik źródłowy: ./plugins/pyhon-extension.c
+import gi
+
+gi.require_version('Gtk', '3.0')
+gi.require_version('Peas', '1.0')
+gi.require_version('Extensya', '1.0')
+
+from gi.repository import Peas
+from gi.repository import GObject
+from gi.repository import Gtk
+from gi.repository import Extensya
+
+class PythonExtension(GObject.Object, Extensya.Extension):
+    window = GObject.Property(type=Extensya.Window)
+    button = GObject.Property(type=Gtk.Button)
+
+    def do_activate(self):
+        self.button = Gtk.Button(label="Python Extension Btn")
+        self.button.connect("clicked", lambda _ : print("Python Extension: Hello World!"))
+        self.window.add_button(self.button)
+        self.button.show()
+
+    def do_deactivate(self):
+        self.window.remove_button(self.button);
+
+```
+### Zakończnie
+
+W przedstawionym materiale opisałem tylko cześć funkcjonalności biblioteki libpeas. Warto zajrzeć do dokumentacji, aby zapoznać się gruntownie z biblioteką libpeas. Mam nadzieje, że materiał przedstawiony w artykułach okaże się pomocny. Wszelkie pytania, czy opinie proszę kierować na mój adres kuba@linux.pl. Poniżej znajduje się kilka pomocnych linków:
+
+* [Oficjalna dokumentacja](https://developer.gnome.org/libpeas/stable/)
+* [Tutorial języka vala](https://wiki.gnome.org/Projects/Vala/Tutorial)
+* [Dokumentacja dla języka vala](https://valadoc.org/)
+* [Dokumentacja dla języka python](https://lazka.github.io/pgi-docs/)

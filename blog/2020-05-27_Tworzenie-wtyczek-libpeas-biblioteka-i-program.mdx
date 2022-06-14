@@ -1,0 +1,239 @@
+---
+author: Jakub Czartek
+title: Tworzenie wtyczek libpeas. Biblioteka.
+date: 2020-05-27
+---
+
+Artykuł będzie poświęcony tworzeniu pluginów przy pomocy biblioteki *libpeas*, która wchodzi w skład platformy deweloperskiej __GNOME__. *Libpeas* została zaprojektowana aby pracować z technologią *GObject*. Biblioteka dostarcza dość proste API, i dlatego rozszerzenie aplikacji napisanej w *gtk+3.0*, o możliwość dynamicznego ładowanie wtyczek, nie powinno nastręczać żadnych trudności. Na potrzeby artykułu użyty zostnie język programowania Vala. Aczkolwiek przykłady zawarte w niniejszym artykule są bardzo trywialne, więc przepisanie ich do języka C nie powinno sprawiać jakichkolwiek problemów. Przykłady można znaleźć pod tym [linkiem](https://github.com/jczartek/sources-for-using-blogmatic/tree/master/PluginyPeas/pisanie-wtyczek-dla-gtk).
+
+## Wymagania
+
+Do poniższych przykładów będą potrzebne następujące bilioteki oraz kompilatory:
+
+* Gtk+ (wersji 3);
+* Vala
+* libpeas,
+* gobject-introspection
+* gcc lub clang
+* python3
+* python-gobject
+
+Aby w pełni zrozumieć niniejszy artykuł będzie trzeba znać technologię *GObject*, *Gtk+*, jak również posiadać dość dobre podstawy języka Vala.
+
+## Struktura
+
+Tworzenie naszej aplikacji, która daja możliwość rozszerzenie się poprzez wtyczki podzielimy na trzy etapy. W pierwszym etapie zostanie przygotowana biblioteka, w drugim sama aplikacja, a w trzecim napiszemy wtyczki. I tak samo podzielimy nasz artykuł na dwie cześci. W pierwszej opiszemy tworzenie biblioteki i programu, w drugiej sam proces tworzenie wtyczki. Nasza aplikacja będzie nosić tajemniczą nazwę *extensya*. Do dzieła!
+
+### Etap pierwszy: biblioteka
+
+Nasza aplikacja będzie tworzyć okno, w którym umieszczać będzie można przyciski. Jeden przycisk będzie domyślnie utworzyony przez aplikację, a kolejne będą umieszczane przez wtyczki. Właściwie to cały kod naszej aplikacji będzie umieszczony w bibliotece. Pierwszą klasę jaką tworzymy jest klasa aplikacji. W niej umieścimy całą logikę obsługi wtyczek. Poniżej znajduję się kod klasy:
+
+```c#
+// Plik źródłowy: extensya-application.vala
+namespace Extensya {
+  public class Application : Gtk.Application {
+    public Peas.Engine engine { get; private set; }
+    public Application() {
+      Object(application_id: "org.github.jczartek.extensya", flags: ApplicationFlags.FLAGS_NONE);
+
+      engine = Peas.Engine.get_default();
+      configure_plugins();
+    }
+
+    protected override void activate() {
+      var win = get_active_window();
+
+      if (win == null) {
+        win = new Window(this);
+      }
+      load_plugins();
+      win.present();
+    }
+
+    protected override void shutdown() {
+      unload_plugins();
+      base.shutdown();
+    }
+
+    private void configure_plugins()
+    {
+      engine.enable_loader("python3");
+
+      string dir = Environment.get_current_dir() + "/plugins";
+      engine.add_search_path(dir, dir);
+
+    }
+
+    private void load_plugins() {
+      foreach (var plugin in engine.get_plugin_list()) {
+        if (!engine.try_load_plugin(plugin))
+        {
+          warning("Can't load the plugin %s", plugin.get_name());
+        }
+      }
+    }
+
+    private void unload_plugins() {
+      foreach (var plugin in engine.get_plugin_list()) {
+        if(!engine.try_unload_plugin(plugin))
+        {
+          warning("Can't unload the plugin %s", plugin.get_name());
+        }
+      }
+    }
+  }
+}
+```
+Klasa __*Peas.Engine*__ jest sercem mechanizmu zarządania wtyczkami w bibliotece *libpeas*. Rolą silnika wtyczek jest zapewnienie wszystkich potrzebnych informacji o wszystkich dostępnych pluginach, a także dostarczenie API do zarządzania i kontrolowania wtyczek wewnątrz aplikacji. W naszej aplikacji pobieramy domyślny silnik wtyczek za pomocą metody statycznej *Peas.Engine.get_default()*.
+
+Logika zarządzania wtyczkami w klasie __*Application*__ jest umieszczona w trzech prywatnych metodach. Pierwszą rzeczą jaką robimy jest skonfigurowanie silnika wtyczek, aby poprawnie wyszukiwał pluginy i załadował loader-a dla języka python. W metodzie *configure_plugins()* dodajemy, przy pomocy metody *add_serach_path()*, ściężkę do katalogu z naszymi pluginami (w naszej aplikacji wszystkie pluginy umieszczamy w podkatalogu *./plugins*). Metoda *add_search_path()* umieszcza dodaną ścieżkę na końcu listy. Oprócz tej metody istnieje jeszcze metoda *prepend_search_path()*, która dodaje ścieżkę na początek listy. Wspomninane metody przyjmują dwa parametry, gdzie pierwszy parametr to ścieżka do modułu wtyczki, a kolejny to ścieżka do danych pluginu. Drugi parametr może być __NULL__, wtedy ścieżka do danych jest taka sama jak do modułu.
+
+Następnie w metodzie *load_plugins()* przeprowadzamy rzeczywiste załadowanie wszystkich wtyczek. Za pomocą metody *get_plugin_list()* pobieramy listę wszystkich znalezionych wtyczek. Metoda zwraca listę obiektów __*Peas.PluginInfo*__. Następnie iterujmy po pobranej liście i ładujemy wszystkie znalezione pluginy za pomocą metody *try_load_plugin()*. Jeżeli jakaś wtyczka nie może być załadowana, to wyświetlamy odpowiedni komunikat. Wszystkie wtyczki zostaną załadowne już po utworzeniu głównego okna aplikacji.
+
+W metodzie *unload_plugins()* odłączamy wszystkie pluginy, gdy aplikacja jest zamykana (gdy wywoływana jest funkcja wirtualna *shutdown()*). Do odłączenie wtyczek używamy metody *try_unload_plugin()*.
+
+Gdy nasze pluginy są włączane lub odłączane to silnik systemu wtyczek emituje dwa zdarzenia do których możemy się podłączyć tj. *load-plugin* oraz *unload-plugin*.
+
+Gdy już mamy skonfigurowany silnik wtyczek, kolejną rzeczą jaką musimy zrobić to przygotowanie interfesju, za pomocą, którego będziemy rozszerzać klasę Window.
+
+```c#
+// Plik źródłowy: extensya-extension.vala
+namespace Extensya {
+  public interface WindowExtension : Object {
+
+  public abstract Window window { get; construct set; }
+
+  public abstract void activate();
+
+  public abstract void deactivate();
+  }
+}
+```
+Zanim przejdziemy do omówienia kodu w klasie *__Window__* należy powiedzieć kilka słów o zdefiniowanym powyżej interfejsie __*WindowExtension*__. Jest to właściwy interfejs, który będzie implementowany przez jedną z klas we wszystkich później napisanych pluginach. Taka mała dygresja związana z nazewnictwem. Przez wtyczkę czy plugin rozumiem bibliotekę (plik z końcówką .so), która składa się z jednej (jak w naszym przypadku) lub kilku klas, które implementują podobne interfejsy, jak ten powyżej. Wyjaśnię to na następującym przykładzie: nasza aplikacja może składać się z kilkudziesięciu klas i jeśli chcemy, aby do naszych klas można było dodać dodatkową funkcjonalność, poprzez wtyczki, to musimy przygotować dla każdej klasy odpowiedni interfejs, który będzie musiał być implementowany przez jakąś klasę umieszoną w pluginie, dalej zwaną przeze mnie *__klasą rozszerzającą__* (w naszym przykładzie rozszerzaną klasą jest klasa *__Window__*). Dobrze jest nazywać interfejsy umieszając w nazwie rozszerzaną klasę.
+
+W interfejsie *__WindowExtension__* zdefiniowaliśmy dwie metody abstrakcyjne oraz abstrakcyjną właściwość. Metoda *activate()* będzie wywołana zaraz po utworzeniu obiektu klasy rozszerzajacej, a metoda *deactivate()* gdy obiekt jest niszczony. W zasadzie metody te będą wywoływane przy załadowniu i odłączeniu wtyczki. Również możemy sami wywoływać wyżej wspomniane metody używając metody instancyjnej *foreach()* klasy *__Peas.ExtensionSet__*. Ostatnią klasą jaką musimy stworzyć jest klasa Window. Kod znajduję się poniżej.
+
+```c#
+// Plik źródłowy: extensya-window.vala
+namespace Extensya {
+  public class Window : Gtk.ApplicationWindow {
+    private Gtk.Box box_buttons;
+    private Peas.ExtensionSet extensions { get; set; }
+
+    public Window(Gtk.Application app) {
+      Object(application: app);
+
+      default_width = 600;
+      default_height = 400;
+      window_position = CENTER;
+
+      var hb = new Gtk.HeaderBar();
+      hb.show_close_button = true;
+      hb.title = "Pluginy";
+
+      var switcher = new Gtk.Switch();
+      switcher.active = true;
+
+      var label = new Gtk.Label("Pluginy: ");
+
+      var box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 5);
+      box.add(label);
+      box.add(switcher);
+
+      hb.pack_start(box);   
+      set_titlebar(hb);
+
+      box_buttons = new Gtk.Box(Gtk.Orientation.VERTICAL, 0);
+      add(box_buttons);
+      show_all();
+
+      var btn = new Gtk.Button.with_label("Przycisk Aplikacji");
+      btn.clicked.connect(() => { print("Application: Hello World!\n"); });
+      add_button(btn);
+
+      extensions = new Peas.ExtensionSet((app as Extensya.Application).engine, typeof (Extensya.Extension), "window", this);
+      extensions.extension_added.connect((info, extension) => {
+        (extension as Extensya.Extension).activate();
+        });
+      extensions.extension_removed.connect((info, extension) => {
+        (extension as Extensya.Extension).deactivate();
+      });
+
+      switcher.notify["active"].connect(() => {
+        var engine = Peas.Engine.get_default();
+        if (switcher.get_active())
+        {
+          foreach (var plugin in engine.get_plugin_list()) {
+            if (!engine.try_load_plugin(plugin))
+            {
+              warning("Can't load the plugin %s", plugin.get_name());
+            }
+          }
+        }
+        else
+        {
+          foreach (var plugin in engine.get_plugin_list()) {
+            if(!engine.try_unload_plugin(plugin))
+            {
+              warning("Can't unload the plugin %s", plugin.get_name());
+            }
+          }
+        }
+      });
+    }
+
+    public void add_button(Gtk.Button btn) requires(btn is Gtk.Button) {
+      btn.show();
+      box_buttons.add(btn);
+    }
+
+    public void remove_button(Gtk.Button btn) requires(btn is Gtk.Button) {
+      box_buttons.remove(btn);
+    }
+  }
+}
+```
+Klasa Window ma dwie funkcje: tworzy proste okienko z przyciskiem i przełącznikiem do ręcznego włączania/wyłączania wtyczek, a także musi utworzyć wszystkie obiekty, których klasy implementują interfejs WindowExtension. Tworzenie tych obiektów zostawiamy klasie *__Peas.ExtensioSet__*, której obiekt tworzymy w konstruktorze klasy Window. Do konstruktora klasy Peas.ExtensionSet podajemy argumenty: domyślny silnik wtyczek, typ interfejsu jaki musi implementować klasa, aby jego obiekt został utworzony przez Peas.ExtensionSet, oraz nazwy właściwości i ich wartości. Aby móc wywołać metody, które zostały zdefiniowane w interfejsie WindowExtension należy subskrybować zdarzenia "extension-added" oraz "extension-removed". Zdarzenia te są odpowiednio publikowane przy włączaniu i odłączaniu wtyczek. Gdy emitowane jest zdarzenie "extension-added" zostanie wywołana metoda activate(), a przy emitowaniu zdarzenia "extension-removed" zostanie wywołana metoda deactivate(). Klasa Window udostępnia także dwie metody publiczne do umieszczania oraz ususwania przycisków. Te metody będą stanowić publiczne API naszej biblioteki.
+
+Powyższy kod należy skompilować:
+
+```
+valac -o libextensya.so --library extensya -H extensya.h  --gir Extensya-1.0.gir  -X -shared -X -fPIC --pkg libpeas-1.0 --pkg gtk+-3.0 extensya-application.vala extensya-window.vala extensya-extension.vala
+```
+
+Następnie musimy wygenerować plik potrzebny dla wtyczek pisanych w pythonie. Zrobimy to następująco:
+
+```
+g-ir-compiler --shared-library libextensya Extensya-1.0.gir -o Extensya-1.0.typelib
+```
+
+## Program
+
+Następnie musimy stworzyć plik wykonywalny dla naszej aplikacji. Zawartość pliku jest dość prosta i przedstawia się następująco:
+```c#
+// Plik źródłowy: launcher.vala
+
+int main(string [] args) {
+  var app = new Extensya.Application();
+  return app.run(args);
+}
+```
+Zapisz plik jako *lanucher.vala* i skompiluj go:
+```
+valac -o extensya launcher.vala --vapidir . --pkg gtk+-3.0 --pkg libpeas-1.0 --pkg extensya -X -I. -X -L. -X -lextensya
+```
+Kilka dodatkowych opcji zostało włączonych, aby upewnić się, że pliki naszej biblioteki zostaną poprawnie znalezione. Jeśli spróbujesz teraz uruchomić program to dostaniesz komunikat błędu:
+```
+./extensya
+/extensya: error while loading shared libraries: libextensya.so: cannot open shared object file: No such file or directory
+```
+Program się nie uruchomił dlatego, że biblioteke libextensya.so nie została zainstalowana we właściwym katalogu przeszukiwania. Aby uruchomić nasz program trzeba ustawiać zmienną środowiskową __LD_LIBRATY_PATH__, aby wskazywała bieżący katalog. Odrazu ustawimy drugą zmienną środowiskową __GI_TYPELIB_PATH__, aby wtyczki napisana w pythonie poprawnie odszukiwały plik typelib. Wpisz w konsoli:
+```
+export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
+export GI_TYPELIB_PATH=.:$GI_TYPELIB_PATH
+```
+I następnie uruchom program:
+```
+./extensya
+```
+Powinno ukazać się okno z jednym przyciskiem. W następnym artykule opiszę tworzenie już właściwych wtyczek.

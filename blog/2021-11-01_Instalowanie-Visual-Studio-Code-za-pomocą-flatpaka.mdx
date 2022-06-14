@@ -1,0 +1,31 @@
+---
+author: Jakub Czartek
+title: Instalowanie Visual Studio Code za pomocą Flatpaka
+date: 2021-11-01
+---
+
+Ostatnio po kilkumiesięcznej przerwie wróciłem do swojej ulubionej dystrybucji linuksa Fedory. Postanowiłem napisać nową aplikację w .netcie5 na linuksie. Wszystkie potrzebne rzeczy można zainstalować za pomocą flatpaka oraz dockera. W tym artykule chciałem atoli się skoncentrować na instalowaniu Visual Studio Code za pomocą flatpaka. Flatpak jest stosunkowo nową technologią do budowania i dystrybuowania aplikacji desktopowych na Linuksie. Aby zainstalować Visual Code za pomocą flatpaka należy otworzyć konsole i wpisać poniższą komendę:
+
+```bash
+flatpak install flathub com.visualstudio.code
+```
+
+Aby uruchomić:
+
+```bash
+flatpak run com.visualstudio.code
+```
+
+Niestety to nie jest wszystko. Pomimio, że mamy zainstalowane środowisko .net5 w systemie to po uruchomieniu Visual Studio Code nie będzie widział środowiska .net5. Powodem tego jest, że flatpak instaluje aplikację w izolowanym środowisku zwanym 'piaskownicą'. Aby poprawić to potrzebne jest zainstalowanie rozszerzenia SDK dla .net5 możemy to zrobić wpisując w konsoli polecenie:
+
+```bash
+flatpak install org.freedesktop.Sdk.Extension.dotnet5
+```
+
+Następną rzeczą do zrobienia jest ustawienie dwóch zmiennych środowiskowych tak aby Visual Code mógł odnaleźć .net5. Wpisz w konsoli poniższą komendę:
+
+```bash
+flatpak override --env PATH=/app/bin:/usr/bin:/usr/lib/sdk/dotnet5/bin --env DOTNET_ROOT=/usr/lib/sdk/dotnet5
+```
+
+Teraz po uruchomieniu Visual Studio Code powinien już widzieć środowisko dotnetowe.
