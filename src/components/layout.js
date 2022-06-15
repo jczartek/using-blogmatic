@@ -3,7 +3,7 @@ import  Nav  from './nav'
 
 const Layout = ({ pageTitle, children }) => {
   return (
-    <div className="min-h-screen w-full bg-gray-200">
+    <div className="min-h-screen w-full bg-white">
       <title>{pageTitle}</title>
       <Nav />
       <div className="container"> 
