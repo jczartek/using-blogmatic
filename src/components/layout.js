@@ -1,5 +1,6 @@
 import * as React from "react";
 import  Nav  from './nav'
+import Footer from "./footer";
 
 const Layout = ({ pageTitle, children }) => {
   return (
@@ -9,6 +10,7 @@ const Layout = ({ pageTitle, children }) => {
       <div className="container"> 
           <main>{children}</main>
       </div>
+      <Footer />
     </div>
   );
 };

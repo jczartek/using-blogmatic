@@ -1,3 +1,26 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto&display=swap");
+@import url("https://cdnjs.cloudflare.com/ajax/libs/fork-awesome/1.2.0/css/fork-awesome.min.css");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+@layer components {
+    footer {
+        @apply bg-stone-800 p-10;
+        min-width: 40rem;
+    }
+    .footer-col:not(:last-child) {
+        @apply mr-20;
+    }
+    footer p {
+        @apply mt-2 text-teal-600 text-sm;
+    }
+    footer h3 {
+        @apply font-bold text-2xl text-slate-400 mb-2;
+    }
+    footer ul li {
+        @apply font-bold text-sm text-teal-600 mb-2;
+    }
+}
