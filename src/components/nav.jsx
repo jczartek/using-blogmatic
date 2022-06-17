@@ -17,7 +17,7 @@ const Nav = () => {
     <div className="w-full flex justify-center items-center bg-cover bg-nav-image xl:h-96 bg-gradient-to-r mb-2 shadow">
       <nav className="flex flex-col items-center justify-center">
         <header className="font-medium
-                         text-zinc-100 
+                         text-slate-200
                          tracking-wide 
                          antialiased 
                          text-2xl xl:text-5xl 

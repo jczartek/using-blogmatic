@@ -4,12 +4,12 @@ import Footer from "./footer";
 
 const Layout = ({ pageTitle, children }) => {
   return (
-    <div className="min-h-screen w-full bg-white">
+    <div className="min-h-screen w-full">
       <title>{pageTitle}</title>
       <Nav />
-      <div className="container"> 
-          <main>{children}</main>
-      </div>
+      <main className="container my-3">
+        {children}
+      </main>
       <Footer />
     </div>
   );

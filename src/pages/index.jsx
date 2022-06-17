@@ -5,23 +5,23 @@ import Layout from "../components/layout";
 const IndexPage = ({ data }) => {
   return (
     <Layout pageTitle="using blogmatic - Home">
-      <div className="posts w-full">
+      <div className="flex flex-col justify-center items-center">
         {data.allMdx.nodes.map((node) => {
           return (
-            <div className="flex flex-col p-6 hover:bg-slate-100" key={node.id}>
-              <div className="flex">
-                <div className="text-gray-600 text-sm mb-2 font-light">
+            <div className="flex flex-col p-6 bg-stone-800 hover:bg-stone-700 my-1 w-11/12 shadow rounded" key={node.id}>
+           
+                <div className="flex text-slate-400 text-sm mb-2 font-light">
                   <span className="mr-2">{node.frontmatter.author}</span>
                   &bull;
                   <span className="ml-2">Data opublikowania: {node.frontmatter.date}</span>
                 </div>
-              </div>
-              <div className="text-zinc-500 font-bold text-xl mb-2">
+          
+              <div className="text-slate-400 font-bold text-xl mb-2">
               <Link to={`/blog/${node.slug.toLowerCase()}`}>
                 {node.frontmatter.title}
                 </Link>
               </div>
-              <div className="text-sm font-light">{node.frontmatter.desc}</div>
+              <div className="text-sm text-teal-600 font-light">{node.frontmatter.desc}</div>
             </div>
           );
         })}

@@ -5,6 +5,9 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+    @apply bg-zinc-700;
+}
 
 @layer components {
     footer {
