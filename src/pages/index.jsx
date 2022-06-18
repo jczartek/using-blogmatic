@@ -10,7 +10,7 @@ const IndexPage = ({ data }) => {
           return (
             <div className="flex flex-col p-6 bg-stone-800 hover:bg-stone-700 my-1 w-11/12 shadow rounded" key={node.id}>
            
-                <div className="flex text-slate-400 text-sm mb-2 font-light">
+                <div className="flex text-orange-300 text-sm mb-2 font-light">
                   <span className="mr-2">{node.frontmatter.author}</span>
                   &bull;
                   <span className="ml-2">Data opublikowania: {node.frontmatter.date}</span>
@@ -21,7 +21,7 @@ const IndexPage = ({ data }) => {
                 {node.frontmatter.title}
                 </Link>
               </div>
-              <div className="text-sm text-teal-600 font-light">{node.frontmatter.desc}</div>
+              <div className="text-sm text-teal-500 font-light">{node.frontmatter.desc}</div>
             </div>
           );
         })}
@@ -35,7 +35,7 @@ export const querySite = graphql`
     allMdx(sort: { fields: frontmatter___date, order: DESC }) {
       nodes {
         frontmatter {
-          date(formatString: "DD MMMM, YYYY", locale: "pl")
+          date(formatString: "DD MMMM YYYY", locale: "pl")
           title
           author
           desc
