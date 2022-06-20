@@ -2,19 +2,19 @@ import * as React from "react";
 
 const Footer = () => {
   return (
-    <footer className="flex">
-      <div className="footer-col">
+    <footer className="grid grid-cols-1 md:grid-cols-4 rounded-t gap-y-3">
+      <div>
         <h3>Using Blogmatic</h3>
         <p>Blog o programowaniu - Jakub Czartek</p>
       </div>
-      <div className="footer-col ml-auto"></div>
-      <div className="footer-col">
+      <div></div>
+      <div className="justify-self-start md:justify-self-end">
         <h3>Kontakt</h3>
         <ul>
           <li>kuba@linux.pl</li>
         </ul>
       </div>
-      <div className="footer-col">
+      <div className="justify-self-start md:justify-self-end">
         <h3>Social</h3>
         <ul>
           <li>
