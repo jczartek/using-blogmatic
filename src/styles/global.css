@@ -11,8 +11,7 @@ body {
 
 @layer components {
     footer {
-        @apply bg-stone-800 p-10;
-        min-width: 40rem;
+        @apply bg-stone-800 p-8;
     }
     .footer-col:not(:last-child) {
         @apply mr-20;
