@@ -65,8 +65,7 @@ const Code = props => {
             justifyContent: "center",
             alignItems: "center",
             color: "#ff9900"
-          }}
-        >{`${language}`}</div>
+          }}>{`${language}`}</div>
         <div
           style={{
             color: "#9d9d9d",
@@ -75,8 +74,7 @@ const Code = props => {
             display: "flex",
             justifyContent: "center",
             alignItems: "center",
-          }}
-        >
+          }}>
           {file && `${file}`}
         </div>
         <div style={{ flexGrow: "1" }}></div>
