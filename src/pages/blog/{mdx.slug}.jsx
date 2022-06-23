@@ -6,8 +6,8 @@ import { MDXRenderer } from "gatsby-plugin-mdx";
 const BlogPost = ({ data }) => {
   return (
     <Layout pageTitle={data.mdx.frontmatter.title}>
-      <div className="flex flex-col justify-center items-center">
-        <div className="bg-stone-800 rounded w-11/12 p-6 my-1">
+      <div className="flex flex-wrap md:mx-4 mx-2 my-1">
+        <div className="bg-stone-800 rounded w-full md:p-6 p-3">
           <header className="text-xl mb-2">
             <div className="flex text-orange-300 text-sm mb-2 font-light">
               <span className="mr-2">{data.mdx.frontmatter.author}</span>
@@ -22,7 +22,7 @@ const BlogPost = ({ data }) => {
             </div>
           </header>
 
-          <article className="font-light leading-relaxed text-stone-200">
+          <article className="mdx">
             <MDXRenderer>{data.mdx.body}</MDXRenderer>
           </article>
         </div>

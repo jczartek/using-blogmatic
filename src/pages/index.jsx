@@ -1,14 +1,15 @@
 import * as React from "react";
 import { Link, graphql } from "gatsby";
 import Layout from "../components/layout";
+import {postsList, postItem} from "../styles/index.module.css";
 
 const IndexPage = ({ data }) => {
   return (
     <Layout pageTitle="using blogmatic - Home">
-      <div className="flex flex-wrap gap-y-4 md:mx-4 mx-2">
+      <div className={postsList}>
         {data.allMdx.nodes.map((node) => {
           return (
-            <div className="flex flex-col md:p-6 p-3 bg-stone-800 hover:bg-stone-700 basis-full shadow rounded" key={node.id}>
+            <div className={postItem} key={node.id}>
            
                 <div className="flex text-orange-300 text-sm mb-2 font-light">
                   <span className="mr-2">{node.frontmatter.author}</span>

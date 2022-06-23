@@ -1,0 +1,8 @@
+
+.posts-list {
+    @apply flex flex-wrap gap-y-4 md:mx-4 mx-2
+}
+
+.post-item {
+    @apply flex flex-col md:p-6 p-3 bg-stone-800 hover:bg-stone-700 basis-full shadow rounded
+}

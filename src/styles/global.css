@@ -26,3 +26,19 @@ body {
         @apply font-bold text-sm text-teal-600 mb-2;
     }
 }
+
+.mdx {
+    @apply font-light leading-relaxed text-stone-200
+}
+
+.mdx h1,h2, h3, h4, h5, h6 {
+    @apply font-bold mt-2 mb-1 text-slate-400
+}
+
+.mdx ul {
+    @apply my-3 list-disc
+}
+
+.mdx ul li {
+    @apply my-2 ml-4 font-medium
+}
