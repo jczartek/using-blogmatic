@@ -13,7 +13,7 @@ const BlogPost = ({ data }) => {
               <span className="mr-2">{data.mdx.frontmatter.author}</span>
               &bull;
               <span className="ml-2">
-                Data opublikowania: {data.mdx.frontmatter.date}
+                {data.mdx.frontmatter.date}
               </span>
             </div>
 

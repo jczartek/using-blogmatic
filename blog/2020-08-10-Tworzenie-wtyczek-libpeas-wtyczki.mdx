@@ -37,7 +37,7 @@ Hidden=false
 W bibliotece libpeas umieszczona została struktura **PeasPluginInfo** za pomocą której możemy pobierać wszystkie potrzebne informacje z pliku konfiguracyjnego.
 W poniższym przykładzie pobieramy i wyświetlamy nazwę i nazwę modułu pluginu.
 
-```c#
+```vala
 var engine = Peas.Engine.get_default();
 
 foreach(var plugin_info in engine.get_plugin_list()) {
@@ -54,7 +54,7 @@ Module=vala-extension.so
 Name=ValaExtension
 ```
 
-```c#
+```vala
 // Plik źródłowy: ./plugins/vala-extension.vala
 class ValaExtension : Object, Extensya.Extension {
 

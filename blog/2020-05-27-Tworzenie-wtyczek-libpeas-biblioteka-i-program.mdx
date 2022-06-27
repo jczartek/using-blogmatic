@@ -29,7 +29,7 @@ Tworzenie naszej aplikacji, która daja możliwość rozszerzenie się poprzez w
 
 Nasza aplikacja będzie tworzyć okno, w którym umieszczać będzie można przyciski. Jeden przycisk będzie domyślnie utworzyony przez aplikację, a kolejne będą umieszczane przez wtyczki. Właściwie to cały kod naszej aplikacji będzie umieszczony w bibliotece. Pierwszą klasę jaką tworzymy jest klasa aplikacji. W niej umieścimy całą logikę obsługi wtyczek. Poniżej znajduję się kod klasy:
 
-```c#
+```vala
 // Plik źródłowy: extensya-application.vala
 namespace Extensya {
   public class Application : Gtk.Application {
@@ -97,7 +97,7 @@ Gdy nasze pluginy są włączane lub odłączane to silnik systemu wtyczek emitu
 
 Gdy już mamy skonfigurowany silnik wtyczek, kolejną rzeczą jaką musimy zrobić to przygotowanie interfesju, za pomocą, którego będziemy rozszerzać klasę Window.
 
-```c#
+```vala
 // Plik źródłowy: extensya-extension.vala
 namespace Extensya {
   public interface WindowExtension : Object {
@@ -114,7 +114,7 @@ Zanim przejdziemy do omówienia kodu w klasie *__Window__* należy powiedzieć k
 
 W interfejsie *__WindowExtension__* zdefiniowaliśmy dwie metody abstrakcyjne oraz abstrakcyjną właściwość. Metoda *activate()* będzie wywołana zaraz po utworzeniu obiektu klasy rozszerzajacej, a metoda *deactivate()* gdy obiekt jest niszczony. W zasadzie metody te będą wywoływane przy załadowniu i odłączeniu wtyczki. Również możemy sami wywoływać wyżej wspomniane metody używając metody instancyjnej *foreach()* klasy *__Peas.ExtensionSet__*. Ostatnią klasą jaką musimy stworzyć jest klasa Window. Kod znajduję się poniżej.
 
-```c#
+```vala
 // Plik źródłowy: extensya-window.vala
 namespace Extensya {
   public class Window : Gtk.ApplicationWindow {
@@ -198,20 +198,21 @@ Klasa Window ma dwie funkcje: tworzy proste okienko z przyciskiem i przełączni
 
 Powyższy kod należy skompilować:
 
-```
+```bash
 valac -o libextensya.so --library extensya -H extensya.h  --gir Extensya-1.0.gir  -X -shared -X -fPIC --pkg libpeas-1.0 --pkg gtk+-3.0 extensya-application.vala extensya-window.vala extensya-extension.vala
 ```
 
 Następnie musimy wygenerować plik potrzebny dla wtyczek pisanych w pythonie. Zrobimy to następująco:
 
-```
+```bash
 g-ir-compiler --shared-library libextensya Extensya-1.0.gir -o Extensya-1.0.typelib
 ```
 
 ## Program
 
 Następnie musimy stworzyć plik wykonywalny dla naszej aplikacji. Zawartość pliku jest dość prosta i przedstawia się następująco:
-```c#
+
+```vala
 // Plik źródłowy: launcher.vala
 
 int main(string [] args) {
@@ -220,21 +221,26 @@ int main(string [] args) {
 }
 ```
 Zapisz plik jako *lanucher.vala* i skompiluj go:
-```
+
+```bash
 valac -o extensya launcher.vala --vapidir . --pkg gtk+-3.0 --pkg libpeas-1.0 --pkg extensya -X -I. -X -L. -X -lextensya
 ```
 Kilka dodatkowych opcji zostało włączonych, aby upewnić się, że pliki naszej biblioteki zostaną poprawnie znalezione. Jeśli spróbujesz teraz uruchomić program to dostaniesz komunikat błędu:
-```
+
+```bash
 ./extensya
 /extensya: error while loading shared libraries: libextensya.so: cannot open shared object file: No such file or directory
+
 ```
 Program się nie uruchomił dlatego, że biblioteke libextensya.so nie została zainstalowana we właściwym katalogu przeszukiwania. Aby uruchomić nasz program trzeba ustawiać zmienną środowiskową __LD_LIBRATY_PATH__, aby wskazywała bieżący katalog. Odrazu ustawimy drugą zmienną środowiskową __GI_TYPELIB_PATH__, aby wtyczki napisana w pythonie poprawnie odszukiwały plik typelib. Wpisz w konsoli:
-```
+
+```bash
 export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
 export GI_TYPELIB_PATH=.:$GI_TYPELIB_PATH
 ```
 I następnie uruchom program:
-```
+
+```bash
 ./extensya
 ```
 Powinno ukazać się okno z jednym przyciskiem. W następnym artykule opiszę tworzenie już właściwych wtyczek.
